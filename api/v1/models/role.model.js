@@ -4,16 +4,15 @@ const roleSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
     },
-    permissions: {
-        type: [String],
-        default: []
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    }
+    permissions: [
+        {
+            type: String,
+        },
+    ],
 });
 
-module.exports = mongoose.model('Role', roleSchema);
+const Role = mongoose.model('Role', roleSchema);
+
+module.exports = Role;
