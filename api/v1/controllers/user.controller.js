@@ -1,11 +1,12 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
+const Role = require('../models/role.model');
 const { ApiResponse } = require('../apiResponses');
 
 exports.registerUser = async (req, res) => {
     try {
-        const { username, email, password } = req.body;
+        const { username, email, password, roles } = req.body;
 
         const existingUser = await User.findOne({ $or: [{ email }, { username }] });
         if (existingUser) {
@@ -14,10 +15,20 @@ exports.registerUser = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        let roleIds = [];
+        if (roles && roles.length > 0) {
+            const foundRoles = await Role.find({ name: { $in: roles } });
+            if (foundRoles.length !== roles.length) {
+                return res.status(400).json(new ApiResponse(400, null, 'One or more roles not found'));
+            }
+            roleIds = foundRoles.map(role => role._id);
+        }
+
         const newUser = new User({
             username,
             email,
             password: hashedPassword,
+            roles: roleIds,
         });
 
         const savedUser = await newUser.save();
