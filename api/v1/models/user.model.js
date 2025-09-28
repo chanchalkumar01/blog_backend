@@ -1,13 +1,30 @@
+const mongoose = require('mongoose');
 
-const Joi = require('joi');
-const { ObjectId } = require('mongodb');
-
-const userSchema = Joi.object({
-    username: Joi.string().alphanum().min(3).max(30).required(),
-    email: Joi.string().email().required(),
-    password: Joi.string().required(),
-    roles: Joi.array().items(Joi.string()).default([]), // Array of role IDs
-    createdAt: Joi.date().default(() => new Date())
+const userSchema = new mongoose.Schema({
+    username: {
+        type: String,
+        required: true,
+        minlength: 3,
+        maxlength: 30,
+        unique: true
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    password: {
+        type: String,
+        required: true
+    },
+    roles: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Role'
+    }],
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
 });
 
-module.exports = userSchema;
+module.exports = mongoose.model('User', userSchema);
