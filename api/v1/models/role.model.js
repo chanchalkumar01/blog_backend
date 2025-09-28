@@ -1,10 +1,19 @@
+const mongoose = require('mongoose');
 
-const Joi = require('joi');
-
-const roleSchema = Joi.object({
-    name: Joi.string().required(),
-    permissions: Joi.array().items(Joi.string()).default([]),
-    createdAt: Joi.date().default(() => new Date())
+const roleSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    permissions: {
+        type: [String],
+        default: []
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
 });
 
-module.exports = roleSchema;
+module.exports = mongoose.model('Role', roleSchema);

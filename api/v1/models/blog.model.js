@@ -1,34 +1,31 @@
+const mongoose = require('mongoose');
+const { Schema } = mongoose;
 
-const Joi = require('joi');
-
-// Schema for individual comments
-const commentSchema = Joi.object({
-    user: Joi.string().required(),
-    text: Joi.string().required(),
-    createdAt: Joi.date().default(() => new Date()),
-    status: Joi.string().valid('active', 'inactive').default('active')
+const commentSchema = new Schema({
+    user: { type: String, required: true },
+    text: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now },
+    status: { type: String, enum: ['active', 'inactive'], default: 'active' }
 });
 
-const blogSchema = Joi.object({
-    title: Joi.string().required(),
-    slug: Joi.string(), // This will be auto-generated from the title
-    short_description: Joi.string().required(),
-    content: Joi.string().required(),
-    author: Joi.string().required(), // In a real app, this would be a reference to a user ID
-    featured_image: Joi.string().uri().allow(''), // Must be a valid URI, can be empty
-    
-    // SEO Fields
-    meta_title: Joi.string().allow(''),
-    meta_description: Joi.string().allow(''),
-    meta_keywords: Joi.array().items(Joi.string()).default([]),
-
-    tags: Joi.array().items(Joi.string()).default([]),
-    status: Joi.string().valid('draft', 'published', 'archived').default('draft'),
-    views: Joi.number().integer().min(0).default(0),
-    likes: Joi.number().integer().min(0).default(0),
-    comments: Joi.array().items(commentSchema).default([]),
-    createdAt: Joi.date().default(() => new Date()),
-    updatedAt: Joi.date().default(() => new Date())
+const blogSchema = new Schema({
+    blogId: { type: Number, unique: true },
+    title: { type: String, required: true },
+    slug: { type: String, unique: true },
+    short_description: { type: String, required: true },
+    content: { type: String, required: true },
+    author: { type: String, required: true },
+    featured_image: { type: String, default: '' },
+    meta_title: { type: String, default: '' },
+    meta_description: { type: String, default: '' },
+    meta_keywords: { type: [String], default: [] },
+    tags: { type: [String], default: [] },
+    status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
+    views: { type: Number, default: 0 },
+    likes: { type: Number, default: 0 },
+    comments: [commentSchema],
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
 });
 
-module.exports = blogSchema;
+module.exports = mongoose.model('Blog', blogSchema);

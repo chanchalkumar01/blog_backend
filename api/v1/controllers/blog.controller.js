@@ -1,18 +1,6 @@
-const { ObjectId } = require('mongodb');
-const blogSchema = require('../models/blog.model');
+const Blog = require('../models/blog.model');
 const sanitizeHtml = require('sanitize-html');
 const { ApiResponse } = require('../apiResponses');
-
-const COLLECTION_NAME = 'blogs';
-
-async function getNextSequenceValue(db, sequenceName) {
-    const sequenceDocument = await db.collection('counters').findOneAndUpdate(
-        { _id: sequenceName },
-        { $inc: { seq: 1 } },
-        { returnDocument: 'after', upsert: true }
-    );
-    return sequenceDocument.seq;
-}
 
 function slugify(text) {
     return text.toString().toLowerCase()
@@ -25,32 +13,20 @@ function slugify(text) {
 
 exports.createBlog = async (req, res) => {
     try {
-        const db = req.app.get('db');
-        await db.collection('counters').updateOne({ _id: 'blogId' }, { $setOnInsert: { seq: 0 } }, { upsert: true });
+        const { title, content, ...rest } = req.body;
+        const slug = slugify(title);
+        const sanitizedContent = sanitizeHtml(content);
 
-        const { error, value } = blogSchema.validate(req.body);
-        if (error) {
-            return res.status(400).json(new ApiResponse(400, error.details, 'Invalid blog data'));
-        }
-
-        const sanitizedContent = sanitizeHtml(value.content);
-        const slug = slugify(value.title);
-
-        const blogId = await getNextSequenceValue(db, 'blogId');
-        const newBlog = {
-            blogId: blogId,
-            ...value,
-            slug: slug,
+        const newBlog = new Blog({
+            ...rest,
+            title,
+            slug,
             content: sanitizedContent,
             author: req.user.username,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        };
+        });
 
-        const collection = db.collection(COLLECTION_NAME);
-        const result = await collection.insertOne(newBlog);
-        const createdBlog = await collection.findOne({ _id: result.insertedId });
-        res.status(201).json(new ApiResponse(201, createdBlog, 'Blog created successfully'));
+        const savedBlog = await newBlog.save();
+        res.status(201).json(new ApiResponse(201, savedBlog, 'Blog created successfully'));
     } catch (error) {
         res.status(500).json(new ApiResponse(500, null, 'Error creating blog'));
     }
@@ -58,9 +34,7 @@ exports.createBlog = async (req, res) => {
 
 exports.getAllBlogs = async (req, res) => {
     try {
-        const db = req.app.get('db');
-        const collection = db.collection(COLLECTION_NAME);
-        const blogs = await collection.find({}, { projection: { content: 0 } }).toArray();
+        const blogs = await Blog.find({}, { content: 0 });
         res.status(200).json(new ApiResponse(200, blogs, 'Blogs fetched successfully'));
     } catch (error) {
         res.status(500).json(new ApiResponse(500, null, 'Error fetching blogs'));
@@ -69,33 +43,19 @@ exports.getAllBlogs = async (req, res) => {
 
 exports.getBlogByIdentifier = async (req, res) => {
     try {
-        const db = req.app.get('db');
         const identifier = req.params.identifier;
         const query = isNaN(parseInt(identifier)) ? { slug: identifier } : { blogId: parseInt(identifier) };
 
-        const collection = db.collection(COLLECTION_NAME);
-        await collection.updateOne(query, { $inc: { views: 1 } });
-
         const canManageComments = req.permissions && req.permissions.has('comments:manage');
-        const aggregationPipeline = [
-            { $match: query },
-            {
-                $addFields: {
-                    comments: canManageComments ? "$comments" : {
-                        $filter: {
-                            input: "$comments",
-                            as: "comment",
-                            cond: { $eq: [ "$$comment.status", "active" ] }
-                        }
-                    }
-                }
-            }
-        ];
 
-        const blog = await collection.aggregate(aggregationPipeline).next();
+        const blog = await Blog.findOneAndUpdate(query, { $inc: { views: 1 } }, { new: true });
 
         if (!blog) {
             return res.status(404).json(new ApiResponse(404, null, 'Blog not found'));
+        }
+
+        if (!canManageComments) {
+            blog.comments = blog.comments.filter(comment => comment.status === 'active');
         }
 
         res.status(200).json(new ApiResponse(200, blog, 'Blog fetched successfully'));
@@ -106,29 +66,27 @@ exports.getBlogByIdentifier = async (req, res) => {
 
 exports.updateBlog = async (req, res) => {
     try {
-        const db = req.app.get('db');
-        const { error, value } = blogSchema.validate(req.body);
-        if (error) {
-            return res.status(400).json(new ApiResponse(400, error.details, 'Invalid blog data'));
-        }
-        
-        const sanitizedContent = sanitizeHtml(value.content);
-        const slug = slugify(value.title);
+        const { title, content, ...rest } = req.body;
+        const slug = slugify(title);
+        const sanitizedContent = sanitizeHtml(content);
 
-        const collection = db.collection(COLLECTION_NAME);
-        const updateData = { ...value, slug: slug, content: sanitizedContent, updatedAt: new Date() };
-        delete updateData._id;
-
-        const result = await collection.updateOne(
+        const updatedBlog = await Blog.findOneAndUpdate(
             { blogId: parseInt(req.params.blogId) },
-            { $set: updateData }
+            {
+                ...rest,
+                title,
+                slug,
+                content: sanitizedContent,
+                updatedAt: new Date(),
+            },
+            { new: true }
         );
 
-        if (result.matchedCount === 0) {
+        if (!updatedBlog) {
             return res.status(404).json(new ApiResponse(404, null, 'Blog not found'));
         }
 
-        res.status(200).json(new ApiResponse(200, null, 'Blog updated successfully'));
+        res.status(200).json(new ApiResponse(200, updatedBlog, 'Blog updated successfully'));
     } catch (error) {
         res.status(500).json(new ApiResponse(500, null, 'Error updating blog'));
     }
@@ -136,11 +94,9 @@ exports.updateBlog = async (req, res) => {
 
 exports.deleteBlog = async (req, res) => {
     try {
-        const db = req.app.get('db');
-        const collection = db.collection(COLLECTION_NAME);
-        const result = await collection.deleteOne({ blogId: parseInt(req.params.blogId) });
+        const deletedBlog = await Blog.findOneAndDelete({ blogId: parseInt(req.params.blogId) });
 
-        if (result.deletedCount === 0) {
+        if (!deletedBlog) {
             return res.status(404).json(new ApiResponse(404, null, 'Blog not found'));
         }
 
@@ -152,14 +108,13 @@ exports.deleteBlog = async (req, res) => {
 
 exports.likeBlog = async (req, res) => {
     try {
-        const db = req.app.get('db');
-        const collection = db.collection(COLLECTION_NAME);
-        const result = await collection.updateOne(
+        const likedBlog = await Blog.findOneAndUpdate(
             { blogId: parseInt(req.params.blogId) },
-            { $inc: { likes: 1 } }
+            { $inc: { likes: 1 } },
+            { new: true }
         );
 
-        if (result.matchedCount === 0) {
+        if (!likedBlog) {
             return res.status(404).json(new ApiResponse(404, null, 'Blog not found'));
         }
 
@@ -171,22 +126,18 @@ exports.likeBlog = async (req, res) => {
 
 exports.addComment = async (req, res) => {
     try {
-        const db = req.app.get('db');
         const newComment = {
-            _id: new ObjectId(),
             user: req.user.username,
             text: req.body.text,
-            createdAt: new Date(),
-            status: 'active'
         };
 
-        const collection = db.collection(COLLECTION_NAME);
-        const result = await collection.updateOne(
+        const updatedBlog = await Blog.findOneAndUpdate(
             { blogId: parseInt(req.params.blogId) },
-            { $push: { comments: newComment } }
+            { $push: { comments: newComment } },
+            { new: true }
         );
 
-        if (result.matchedCount === 0) {
+        if (!updatedBlog) {
             return res.status(404).json(new ApiResponse(404, null, 'Blog not found'));
         }
 
@@ -198,7 +149,6 @@ exports.addComment = async (req, res) => {
 
 exports.updateCommentStatus = async (req, res) => {
     try {
-        const db = req.app.get('db');
         const { blogId, commentId } = req.params;
         const { status } = req.body;
 
@@ -206,13 +156,13 @@ exports.updateCommentStatus = async (req, res) => {
             return res.status(400).json(new ApiResponse(400, null, 'Invalid status'));
         }
 
-        const collection = db.collection(COLLECTION_NAME);
-        const result = await collection.updateOne(
-            { blogId: parseInt(blogId), "comments._id": new ObjectId(commentId) },
-            { $set: { "comments.$.status": status } }
+        const updatedBlog = await Blog.findOneAndUpdate(
+            { blogId: parseInt(blogId), "comments._id": commentId },
+            { $set: { "comments.$.status": status } },
+            { new: true }
         );
 
-        if (result.matchedCount === 0) {
+        if (!updatedBlog) {
             return res.status(404).json(new ApiResponse(404, null, 'Blog or comment not found'));
         }
 
