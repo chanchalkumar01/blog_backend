@@ -50,7 +50,9 @@ exports.updateRole = async (req, res) => {
     }
 };
 
-exports.deleteRole = async (req,.params.roleId);
+exports.deleteRole = async (req, res) => {
+    try {
+        const deletedRole = await Role.findByIdAndDelete(req.params.roleId);
         if (!deletedRole) {
             return res.status(404).json(new ApiResponse(404, null, 'Role not found'));
         }
