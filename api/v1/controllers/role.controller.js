@@ -4,9 +4,6 @@ const { ApiResponse } = require('../apiResponses');
 
 exports.createRole = async (req, res) => {
     try {
-        if (req.user.role !== 'admin') {
-            return res.status(403).json(new ApiResponse(403, null, 'Forbidden: Only admins can create roles'));
-        }
         const { name, permissions } = req.body;
         const newRole = new Role({ name, permissions });
         const savedRole = await newRole.save();
