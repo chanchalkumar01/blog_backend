@@ -1,5 +1,13 @@
-import { createRole, getAllRoles } from "@/lib/controllers/role.controller";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
+import { createRole, getAllRoles } from '@/lib/controllers/role.controller';
+import { connectToDB } from '@/lib/db';
 
-export const POST = createRole;
-export const GET = getAllRoles;
+export async function POST(req: NextRequest) {
+    await connectToDB();
+    return createRole(req);
+}
+
+export async function GET(req: NextRequest) {
+    await connectToDB();
+    return getAllRoles(req);
+}

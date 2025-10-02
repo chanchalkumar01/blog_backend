@@ -1,5 +1,13 @@
-import { createBlog, getAllBlogs } from "@/lib/controllers/blog.controller";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
+import { createBlog, getAllBlogs } from '@/lib/controllers/blog.controller';
+import { connectToDB } from '@/lib/db';
 
-export const POST = createBlog;
-export const GET = getAllBlogs;
+export async function POST(req: NextRequest) {
+    await connectToDB();
+    return createBlog(req);
+}
+
+export async function GET(req: NextRequest) {
+    await connectToDB();
+    return getAllBlogs(req);
+}

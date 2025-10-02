@@ -9,7 +9,7 @@ export const registerUser = async (req: NextRequest) => {
     try {
         const { username, email, password, roles } = await req.json();
 
-        const existingUser = await (User as any).findOne({ $or: [{ email }, { username }] });
+        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
         if (existingUser) {
             return NextResponse.json(new ApiResponse(409, null, 'Username or email already exists'), { status: 409 });
         }
@@ -18,14 +18,14 @@ export const registerUser = async (req: NextRequest) => {
 
         let roleIds = [];
         if (roles && roles.length > 0) {
-            const foundRoles = await (Role as any).find({ name: { $in: roles } });
+            const foundRoles = await Role.find({ name: { $in: roles } });
             if (foundRoles.length !== roles.length) {
                 return NextResponse.json(new ApiResponse(400, null, 'One or more roles not found'), { status: 400 });
             }
-            roleIds = foundRoles.map((role: any) => role._id);
+            roleIds = foundRoles.map(role => role._id);
         }
 
-        const newUser = new (User as any)({
+        const newUser = new User({
             username,
             email,
             password: hashedPassword,
@@ -36,18 +36,18 @@ export const registerUser = async (req: NextRequest) => {
         savedUser.password = undefined;
 
         return NextResponse.json(new ApiResponse(201, savedUser, 'User registered successfully'), { status: 201 });
-    } catch (error: any) {
-        if (error.name === 'ValidationError') {
-            return NextResponse.json(new ApiResponse(400, error.errors, 'Invalid user data'), { status: 400 });
+    } catch (error) {
+        if (error instanceof Error && error.name === 'ValidationError') {
+            return NextResponse.json(new ApiResponse(400, (error as any).errors, 'Invalid user data'), { status: 400 });
         }
-        return NextResponse.json(new ApiResponse(500, { error: error.message }, 'Error creating user'), { status: 500 });
+        return NextResponse.json(new ApiResponse(500, { error: (error as Error).message }, 'Error creating user'), { status: 500 });
     }
 };
 
 export const loginUser = async (req: NextRequest) => {
     try {
         const { email, password } = await req.json();
-        const user = await (User as any).findOne({ email }).select('+password');
+        const user = await User.findOne({ email }).select('+password');
 
         if (user && (await bcrypt.compare(password, user.password))) {
             const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, {
@@ -57,8 +57,8 @@ export const loginUser = async (req: NextRequest) => {
         } else {
             return NextResponse.json(new ApiResponse(401, null, 'Invalid credentials'), { status: 401 });
         }
-    } catch (error: any) {
-        return NextResponse.json(new ApiResponse(500, { error: error.message }, 'Error logging in'), { status: 500 });
+    } catch (error) {
+        return NextResponse.json(new ApiResponse(500, { error: (error as Error).message }, 'Error logging in'), { status: 500 });
     }
 };
 
@@ -69,7 +69,7 @@ export const assignRoles = async (req: NextRequest, { params }: { params: { user
             return NextResponse.json(new ApiResponse(400, null, 'Roles must be an array of role IDs'), { status: 400 });
         }
 
-        const updatedUser = await (User as any).findByIdAndUpdate(
+        const updatedUser = await User.findByIdAndUpdate(
             params.userId,
             { $set: { roles: roles } },
             { new: true } 
@@ -80,44 +80,63 @@ export const assignRoles = async (req: NextRequest, { params }: { params: { user
         }
 
         return NextResponse.json(new ApiResponse(200, null, 'User roles updated successfully'), { status: 200 });
-    } catch (error: any) {
-        return NextResponse.json(new ApiResponse(500, { error: error.message }, 'Error updating user roles'), { status: 500 });
+    } catch (error) {
+        return NextResponse.json(new ApiResponse(500, { error: (error as Error).message }, 'Error updating user roles'), { status: 500 });
     }
 };
 
 export const getAllUsers = async (req: NextRequest) => {
     try {
-        const users = await (User as any).find().select('-password');
+        const users = await User.find().populate('roles', 'name').select('-password');
         return NextResponse.json(new ApiResponse(200, users, 'Users fetched successfully'), { status: 200 });
-    } catch (error: any) {
-        return NextResponse.json(new ApiResponse(500, { error: error.message }, 'Error fetching users'), { status: 500 });
+    } catch (error) {
+        return NextResponse.json(new ApiResponse(500, { error: (error as Error).message }, 'Error fetching users'), { status: 500 });
     }
 };
 
 export const getUserById = async (req: NextRequest, { params }: { params: { userId: string } }) => {
     try {
-        const user = await (User as any).findById(params.userId).select('-password');
+        const user = await User.findById(params.userId).populate('roles', 'name').select('-password');
 
         if (!user) {
             return NextResponse.json(new ApiResponse(404, null, 'User not found'), { status: 404 });
         }
 
         return NextResponse.json(new ApiResponse(200, user, 'User fetched successfully'), { status: 200 });
-    } catch (error: any) {
-        return NextResponse.json(new ApiResponse(500, { error: error.message }, 'Error fetching user'), { status: 500 });
+    } catch (error) {
+        return NextResponse.json(new ApiResponse(500, { error: (error as Error).message }, 'Error fetching user'), { status: 500 });
+    }
+};
+
+export const updateUser = async (req: NextRequest, { params }: { params: { userId: string } }) => {
+    try {
+        const { username, email, roles } = await req.json();
+        const updatedUser = await User.findByIdAndUpdate(
+            params.userId,
+            { username, email, roles },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedUser) {
+            return NextResponse.json(new ApiResponse(404, null, 'User not found'), { status: 404 });
+        }
+
+        return NextResponse.json(new ApiResponse(200, updatedUser, 'User updated successfully'), { status: 200 });
+    } catch (error) {
+        return NextResponse.json(new ApiResponse(500, { error: (error as Error).message }, 'Error updating user'), { status: 500 });
     }
 };
 
 export const deleteUser = async (req: NextRequest, { params }: { params: { userId: string } }) => {
     try {
-        const result = await (User as any).findByIdAndDelete(params.userId);
+        const result = await User.findByIdAndDelete(params.userId);
 
         if (!result) {
             return NextResponse.json(new ApiResponse(404, null, 'User not found'), { status: 404 });
         }
 
         return NextResponse.json(new ApiResponse(200, null, 'User deleted successfully'), { status: 200 });
-    } catch (error: any) {
-        return NextResponse.json(new ApiResponse(500, { error: error.message }, 'Error deleting user'), { status: 500 });
+    } catch (error) {
+        return NextResponse.json(new ApiResponse(500, { error: (error as Error).message }, 'Error deleting user'), { status: 500 });
     }
 };
