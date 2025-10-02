@@ -24,6 +24,7 @@
         "react-dom": "19.1.0",
         "sanitize-html": "^2.17.0",
         "tailwind-merge": "^2.3.0",
+        "tailwindcss-animate": "^1.0.7",
         "wait-on": "^9.0.1"
     },
     "devDependencies": {
