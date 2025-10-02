@@ -6,10 +6,10 @@ const Sidebar = () => {
     <aside className="w-64 bg-gray-800 text-white p-4">
       <div className="text-2xl font-bold mb-4">Admin Panel</div>
       <nav>
-        <Link href="/" className="block py-2 px-4 rounded hover:bg-gray-700">Dashboard</Link>
-        <Link href="/users" className="block py-2 px-4 rounded hover:bg-gray-700">Users</Link>
-        <Link href="/roles" className="block py-2 px-4 rounded hover:bg-gray-700">Roles</Link>
-        <Link href="/blogs" className="block py-2 px-4 rounded hover:bg-gray-700">Blogs</Link>
+        <Link href="/admin" className="block py-2 px-4 rounded hover:bg-gray-700">Dashboard</Link>
+        <Link href="/admin/users" className="block py-2 px-4 rounded hover:bg-gray-700">Users</Link>
+        <Link href="/admin/roles" className="block py-2 px-4 rounded hover:bg-gray-700">Roles</Link>
+        <Link href="/admin/blogs" className="block py-2 px-4 rounded hover:bg-gray-700">Blogs</Link>
       </nav>
     </aside>
   );
