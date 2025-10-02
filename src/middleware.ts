@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ApiResponse } from './lib/apiResponses';
-import { verifyToken } from './lib/utils/auth';
+import { ApiResponse } from '@/lib/apiResponses';
+import { verifyToken } from '@/app/api/v1/utils/auth';
 
 const unProtectedRoutes = ['/api/users/login', '/api/users/register'];
 
