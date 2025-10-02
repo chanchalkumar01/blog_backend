@@ -4,111 +4,125 @@
 import { useEffect, useState } from 'react';
 import { apiUrls } from '@/lib/apiUrls';
 import {
-  UsersIcon,
-  ShieldCheckIcon,
-  DocumentTextIcon,
-  ChartBarIcon,
+    UsersIcon,
+    ShieldCheckIcon,
+    DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 
-const StatCard = ({ icon: Icon, title, value, bgColorClass, loading }: any) => (
-    <div className="bg-card text-card-foreground rounded-lg shadow-md p-6 flex items-center transition-transform transform hover:-translate-y-1">
-        <div className={`p-3 rounded-full mr-4 ${bgColorClass}`}>
-            <Icon className="h-6 w-6 text-white" />
-        </div>
-        <div>
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card"
+
+const StatCard = ({ icon: Icon, title, value, description, loading }: any) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <Icon className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
             {loading ? (
                 <div className="h-7 w-16 bg-muted rounded-md animate-pulse mt-1"></div>
             ) : (
-                <p className="text-2xl font-bold">{value}</p>
+                <div className="text-2xl font-bold">{value}</div>
             )}
-        </div>
-    </div>
+            <p className="text-xs text-muted-foreground">
+                {description}
+            </p>
+        </CardContent>
+    </Card>
 );
 
 
 export default function Home() {
-  const [stats, setStats] = useState({ users: 0, roles: 0, blogs: 0 });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+    const [stats, setStats] = useState({ users: 0, roles: 0, blogs: 0 });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [usersRes, rolesRes, blogsRes] = await Promise.all([
-          fetch(apiUrls.getUsers, { cache: 'no-store' }),
-          fetch(apiUrls.getRoles, { cache: 'no-store' }),
-          fetch(apiUrls.getBlogs, { cache: 'no-store' }),
-        ]);
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                const [usersRes, rolesRes, blogsRes] = await Promise.all([
+                    fetch(apiUrls.getUsers, { cache: 'no-store' }),
+                    fetch(apiUrls.getRoles, { cache: 'no-store' }),
+                    fetch(apiUrls.getBlogs, { cache: 'no-store' }),
+                ]);
 
-        if (!usersRes.ok || !rolesRes.ok || !blogsRes.ok) {
-          throw new Error('Failed to fetch data');
+                if (!usersRes.ok || !rolesRes.ok || !blogsRes.ok) {
+                    throw new Error('Failed to fetch data');
+                }
+
+                const usersData = await usersRes.json();
+                const rolesData = await rolesRes.json();
+                const blogsData = await blogsRes.json();
+
+                setStats({
+                    users: usersData.data.length,
+                    roles: rolesData.data.length,
+                    blogs: blogsData.data.length,
+                });
+            } catch (error: any) {
+                setError(error.message);
+            } finally {
+                setLoading(false);
+            }
         }
 
-        const usersData = await usersRes.json();
-        const rolesData = await rolesRes.json();
-        const blogsData = await blogsRes.json();
+        fetchData();
+    }, []);
 
-        setStats({
-          users: usersData.data.length,
-          roles: rolesData.data.length,
-          blogs: blogsData.data.length,
-        });
-      } catch (error: any) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    }
+    return (
+        <div >
+            <div className="flex items-center">
+                <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
+            </div>
+            {error && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-600 px-4 py-3 rounded-md mb-6">
+                    <strong className="font-bold">Error: </strong>
+                    <span className="block sm:inline">{error}</span>
+                </div>
+            )}
+            <div
+                className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm mt-4"
+            >
+                <div className="flex flex-col items-center gap-1 text-center py-12">
+                    <h3 className="text-2xl font-bold tracking-tight">
+                        You have no products
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                        You can start selling as soon as you add a product.
+                    </p>
+                </div>
+            </div>
 
-    fetchData();
-  }, []);
+            <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4 mt-4">
+                <StatCard
+                    title="Total Users"
+                    value={stats.users}
+                    loading={loading}
+                    icon={UsersIcon}
+                    description="Total users in the system"
+                />
+                <StatCard
+                    title="Total Roles"
+                    value={stats.roles}
+                    loading={loading}
+                    icon={ShieldCheckIcon}
+                    description="Total roles in the system"
+                />
+                <StatCard
+                    title="Total Blogs"
+                    value={stats.blogs}
+                    loading={loading}
+                    icon={DocumentTextIcon}
+                    description="Total blogs in the system"
+                />
+            </div>
 
-  return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Welcome back, Admin! Here's an overview of your site.</p>
-      </div>
 
-      {error && (
-         <div className="bg-red-500/10 border border-red-500/20 text-red-600 px-4 py-3 rounded-md mb-6">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
         </div>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard
-          icon={UsersIcon}
-          title="Total Users"
-          value={stats.users}
-          bgColorClass="bg-primary"
-          loading={loading}
-        />
-        <StatCard
-          icon={ShieldCheckIcon}
-          title="Total Roles"
-          value={stats.roles}
-          bgColorClass="bg-pink-600"
-          loading={loading}
-        />
-        <StatCard
-          icon={DocumentTextIcon}
-          title="Total Blogs"
-          value={stats.blogs}
-          bgColorClass="bg-green-600"
-          loading={loading}
-        />
-      </div>
-
-      <div className="mt-10 bg-card text-card-foreground rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-bold text-foreground mb-4">Recent Activity</h2>
-        <div className="flex items-center text-muted-foreground">
-          <ChartBarIcon className="h-6 w-6 mr-3" />
-          <p>No recent activity to display.</p>
-        </div>
-      </div>
-    </div>
-  );
+    );
 }
