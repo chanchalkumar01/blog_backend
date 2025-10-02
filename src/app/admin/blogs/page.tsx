@@ -4,21 +4,6 @@
 import { apiUrls } from '@/lib/apiUrls';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
 
 async function getBlogs() {
     const res = await fetch(apiUrls.getBlogs, { cache: 'no-store' });
@@ -63,46 +48,59 @@ export default function BlogsPage() {
         }
     };
 
+    if (error) {
+        return (
+          <div className="p-6 sm:p-10">
+            <h1 className="text-3xl font-bold mb-4">Blogs</h1>
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <strong className="font-bold">Error: </strong>
+              <span className="block sm:inline">{error}</span>
+            </div>
+          </div>
+        );
+    }
+
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Blogs</CardTitle>
-                <CardDescription>A list of all the blogs in the database.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {error && <p className="text-red-500">Error: {error}</p>}
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Author</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Views</TableHead>
-                            <TableHead>Likes</TableHead>
-                            <TableHead>Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
+        <div className="p-6 sm:p-10">
+            <div className="flex items-center justify-between mb-8">
+                <h1 className="text-3xl font-extrabold text-gray-900">Blogs</h1>
+                <Link href="/admin/blogs/create" className="inline-flex items-center justify-center px-5 py-3 text-base font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Create Blog
+                </Link>
+            </div>
+            <div className="overflow-x-auto bg-white rounded-lg shadow-md">
+                <table className="min-w-full divide-y divide-gray-300">
+                    <thead className="bg-gray-200">
+                        <tr>
+                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Title</th>
+                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Author</th>
+                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Views</th>
+                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Likes</th>
+                            <th scope="col" className="px-6 py-4 text-right text-sm font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
                         {blogs.map((blog: any) => (
-                            <TableRow key={blog._id}>
-                                <TableCell>{blog.title}</TableCell>
-                                <TableCell>{blog.author}</TableCell>
-                                <TableCell>{blog.status}</TableCell>
-                                <TableCell>{blog.views}</TableCell>
-                                <TableCell>{blog.likes}</TableCell>
-                                <TableCell>
-                                    <Link href={`/admin/blogs/${blog._id}/edit`} className="text-blue-500 hover:underline mr-2">
+                            <tr key={blog._id} className="hover:bg-gray-100 transition-colors duration-200">
+                                <td className="px-6 py-4 whitespace-nowrap text-md font-medium text-gray-800">{blog.title}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-md text-gray-600">{blog.author}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-md text-gray-600">{blog.status}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-md text-gray-600">{blog.views}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-md text-gray-600">{blog.likes}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right text-md font-medium space-x-4">
+                                    <Link href={`/admin/blogs/${blog._id}/edit`} className="text-blue-600 hover:text-blue-800 font-semibold">
                                         Edit
                                     </Link>
-                                    <button onClick={() => handleDelete(blog._id)} className="text-red-500 hover:underline">
+                                    <button onClick={() => handleDelete(blog._id)} className="text-red-600 hover:text-red-800 font-semibold">
                                         Delete
                                     </button>
-                                </TableCell>
-                            </TableRow>
+                                </td>
+                            </tr>
                         ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     );
 }
