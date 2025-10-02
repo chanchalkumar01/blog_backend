@@ -13,23 +13,26 @@ const ThemeSwitcher = () => {
     setMounted(true);
   }, []);
 
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
+
   if (!mounted) {
-    return null;
+    // Render a placeholder or nothing to avoid hydration mismatch
+    return <div className="w-full h-10 rounded-md bg-muted/50 animate-pulse" />;
   }
 
   return (
     <button
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-      className="flex items-center justify-center w-full py-3 px-4 rounded-lg bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300"
+      onClick={toggleTheme}
+      className="w-full flex items-center justify-center p-2 rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors duration-200"
+      aria-label="Toggle theme"
     >
       {theme === 'dark' ? (
-        <SunIcon className="h-6 w-6 mr-4" />
+        <SunIcon className="h-5 w-5" />
       ) : (
-        <MoonIcon className="h-6 w-6 mr-4" />
+        <MoonIcon className="h-5 w-5" />
       )}
-      <span className="font-medium">
-        Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
-      </span>
     </button>
   );
 };

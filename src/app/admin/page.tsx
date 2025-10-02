@@ -10,24 +10,22 @@ import {
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
 
-const StatCard = ({ icon: Icon, title, value, color, loading }: any) => (
-  <div
-    className="bg-surface rounded-lg shadow-lg p-6 flex items-center transition-transform transform hover:scale-105"
-    style={{ background: 'var(--surface)' }}
-  >
-    <div className={`p-4 rounded-full mr-4`} style={{ backgroundColor: color, color: '#fff' }}>
-      <Icon className="h-8 w-8" />
+const StatCard = ({ icon: Icon, title, value, bgColorClass, loading }: any) => (
+    <div className="bg-card text-card-foreground rounded-lg shadow-md p-6 flex items-center transition-transform transform hover:-translate-y-1">
+        <div className={`p-3 rounded-full mr-4 ${bgColorClass}`}>
+            <Icon className="h-6 w-6 text-white" />
+        </div>
+        <div>
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            {loading ? (
+                <div className="h-7 w-16 bg-muted rounded-md animate-pulse mt-1"></div>
+            ) : (
+                <p className="text-2xl font-bold">{value}</p>
+            )}
+        </div>
     </div>
-    <div>
-      <div className="text-lg font-semibold text-foreground">{title}</div>
-      {loading ? (
-        <div className="h-8 w-16 bg-gray-200 rounded-md animate-pulse"></div>
-      ) : (
-        <div className="text-3xl font-bold text-primary">{value}</div>
-      )}
-    </div>
-  </div>
 );
+
 
 export default function Home() {
   const [stats, setStats] = useState({ users: 0, roles: 0, blogs: 0 });
@@ -69,14 +67,14 @@ export default function Home() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-4xl font-extrabold text-primary">Admin Dashboard</h1>
-        <p className="text-lg text-foreground mt-2">Welcome back, Admin!</p>
+        <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+        <p className="text-muted-foreground mt-1">Welcome back, Admin! Here's an overview of your site.</p>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md mb-6">
+         <div className="bg-red-500/10 border border-red-500/20 text-red-600 px-4 py-3 rounded-md mb-6">
           <strong className="font-bold">Error: </strong>
-          <span>{error}</span>
+          <span className="block sm:inline">{error}</span>
         </div>
       )}
 
@@ -85,29 +83,29 @@ export default function Home() {
           icon={UsersIcon}
           title="Total Users"
           value={stats.users}
-          color="#1976D2"
+          bgColorClass="bg-primary"
           loading={loading}
         />
         <StatCard
           icon={ShieldCheckIcon}
           title="Total Roles"
           value={stats.roles}
-          color="#F50057"
+          bgColorClass="bg-pink-600"
           loading={loading}
         />
         <StatCard
           icon={DocumentTextIcon}
           title="Total Blogs"
           value={stats.blogs}
-          color="#4CAF50"
+          bgColorClass="bg-green-600"
           loading={loading}
         />
       </div>
 
-      <div className="mt-10 bg-surface rounded-lg shadow-lg p-6" style={{ background: 'var(--surface)' }}>
-        <h2 className="text-2xl font-bold text-primary mb-4">Recent Activity</h2>
-        <div className="flex items-center text-foreground">
-          <ChartBarIcon className="h-8 w-8 mr-4 text-primary" />
+      <div className="mt-10 bg-card text-card-foreground rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-bold text-foreground mb-4">Recent Activity</h2>
+        <div className="flex items-center text-muted-foreground">
+          <ChartBarIcon className="h-6 w-6 mr-3" />
           <p>No recent activity to display.</p>
         </div>
       </div>

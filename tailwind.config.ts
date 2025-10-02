@@ -21,6 +21,10 @@ const config: Config = {
           DEFAULT: "var(--secondary)",
           foreground: "var(--secondary-foreground)",
         },
+        muted: {
+          DEFAULT: "var(--muted)",
+          foreground: "var(--muted-foreground)",
+        },
         accent: {
           DEFAULT: "var(--accent)",
           foreground: "var(--accent-foreground)",
@@ -40,6 +44,11 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-geist-sans)"],
         mono: ["var(--font-geist-mono)"],
+      },
+      borderRadius: {
+        lg: `calc(var(--radius) + 4px)`,
+        md: `var(--radius)`,
+        sm: `calc(var(--radius) - 4px)`,
       },
     },
   },
